@@ -1,0 +1,35 @@
+#include "test.h"
+
+namespace MODES
+{
+  void cTest_mode::userControl(void)
+  {
+    show();
+  }
+  
+  void cTest_mode::onShow(void)
+  {
+    return;
+  }
+  
+  void cTest_mode::enterKeyAction(void)
+  {
+    return;
+  }
+  
+  void cTest_mode::rKeyAction(void)
+  {
+    return;
+  }
+  
+  void cTest_mode::lKeyAction(void)
+  {
+    return;
+  }
+  
+  void cTest_mode::onKeyAction(void)
+  {
+    return;
+  }
+  
+};

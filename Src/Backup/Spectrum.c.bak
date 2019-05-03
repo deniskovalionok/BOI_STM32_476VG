@@ -1,0 +1,101 @@
+#include "Spectrum.h"
+#include "identify.h"
+#include <math.h>
+
+BOOL Spectrum_peakProc_ex(float *position, float* sigma)
+{
+	long pos = (long)(*position);
+
+	//в окне двух сигм с каждой стороны будем искать максимум
+	long sig = 2*SigmaArray[pos]/256
+#ifdef _THIN_SIGMA
+				*SIGMA_THIN_FACTOR_M/SIGMA_THIN_FACTOR_D
+#endif	//#ifdef _THIN_SIGMA
+		;
+	
+	long left = pos-sig;
+	long right = pos+sig;
+	if(left<1)left = 1;
+	if(right>=CHANNELS-1)right = CHANNELS-2;
+	if(left>right)return FALSE;
+	
+	long val, max=0;
+	for(int i=left;i<=right;i++)
+	{
+		val = identifyControl.ISpectrum[i];
+		if(val>max)
+		{
+			max = val;
+			pos = i;
+		}
+	}
+	//нашли максимум теперь средневзвешенным найдем центр пика по окну 2 сигмы с каждой стороны
+	sig = 2*SigmaArray[pos]/256
+#ifdef _THIN_SIGMA
+				*SIGMA_THIN_FACTOR_M/SIGMA_THIN_FACTOR_D
+#endif	//#ifdef _THIN_SIGMA
+		;
+	left = pos-sig;
+	right = pos+sig;
+	if(left<1)left = 1;
+	if(right>=CHANNELS-1)right = CHANNELS-2;
+	if(left>right)return FALSE;
+	
+	long long summ = 0;
+	long long msumm = 0;
+	long long mean;
+	for(int i=left;i<=right;i++)
+	{
+		mean = (long long)identifyControl.ISpectrum[i];
+		mean*=mean;
+		summ+=mean;
+		msumm+=mean*i;
+	}
+	
+	if(summ<=0)return FALSE;	//empty spectrum
+
+	//определили центр по средневзвешенному
+	//теперь задаем края по 3,5 сигмы с каждой стороы и обрабатываем пик
+	*position = (float)msumm/(float)summ;
+	pos = (long)(*position+0.5);
+	
+	sig = (int)(3.5*SigmaArray[pos]/256)
+#ifdef _THIN_SIGMA
+				*SIGMA_THIN_FACTOR_M/SIGMA_THIN_FACTOR_D
+#endif	//#ifdef _THIN_SIGMA
+		;
+	left = pos-sig;
+	right = pos+sig;
+	//обязательно с первого по последний -1 канал чтобы сделать усреднение по краям по три точки
+	if(left<1)left = 1;
+	if(right>=CHANNELS-1)
+		right = CHANNELS-2;
+	return Spectrum_QuickPeakCalculation(left,right,position,sigma);
+}
+
+
+
+//быстрая обработка пика
+//задаем левую и правую границу и положение центра,
+//возврат точная позиция и сигма
+//если возврат FALSE то расчет не удался
+BOOL Spectrum_QuickPeakCalculation(long left, long right, float *position, float *sigma)
+{
+	float s,d2,d,d1,k,b;
+	if(right-left<=0)return FALSE;
+	long lng = (long)(identifyControl.ISpectrum[left-1]+identifyControl.ISpectrum[left]+identifyControl.ISpectrum[left+1]);
+	k=(float)((long)(identifyControl.ISpectrum[right-1]+identifyControl.ISpectrum[right]+identifyControl.ISpectrum[right+1])-
+			  lng)/(float)(3*(right-left));
+	b=(float)lng/3.0-k*left;
+	d=0; d1=0; d2=0;
+	for(long i=left; i<=right; i++){
+		s=((float)identifyControl.ISpectrum[i]-k*i-b); if(s<0) s=0;
+		d+=s; s*=i; d1+=s; s*=i; d2+=s;
+	}
+	if(d<=0)return FALSE;
+	(*position)=d1/d;
+	k=(d2/d-(*position)*(*position));
+	if(k<=0)return FALSE;
+	(*sigma)=sqrt(k);
+	return TRUE;
+}

@@ -1,0 +1,257 @@
+#ifndef _MODE_PROTOTYPE_H
+#define _MODE_PROTOTYPE_H
+
+#include <stdint.h>
+#include "ft8xx.h"
+
+#ifdef __cplusplus
+
+#ifdef FILESYSTEM
+extern "C"
+{
+  
+#include "filesystem.h"
+  
+}
+#endif //#ifdef FILESYSTEM
+
+namespace MODES
+{
+  
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+  
+  // RGB палитра
+  struct tagRGBColor{
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+  };
+  
+  struct tagMenu{
+    uint8_t name[21];
+    void (*func)(void);
+    bool isShow;
+  };
+  
+  enum tagKey {
+    R_KEY,
+    L_KEY,
+    O_KEY,
+    E_KEY,
+  };
+  
+  enum tagKeyMod{
+    UNLOCK_KEY = 0,
+    LOCK_KEY,
+  };
+  
+  class cMode_prototype;
+  
+  class cMessage_portotype
+  {
+  public:
+  protected:
+    virtual void onShow(void) = 0;
+    virtual void userControl(void) = 0;
+    
+    virtual void start(void) = 0;
+    
+    virtual void enterKeyAction(void) = 0;
+    virtual void rKeyAction(void) = 0;
+    virtual void lKeyAction(void) = 0;
+    virtual void onKeyAction(void) = 0;
+    
+    uint8_t leftButtonText[7];
+    uint8_t rightButtonText[7];
+    uint8_t enterButtonText[7];
+    uint8_t onButtonText[7];
+    
+    bool rKeyState;
+    bool lKeyState;
+    bool eKeyState;
+    bool oKeyState;
+    
+    bool clearScreen;
+    
+    friend cMode_prototype;
+    
+    // цвет линий которыми нарисован интерфейс
+    struct tagRGBColor InterfaceColor;
+    
+    // цвет шрифта
+    struct tagRGBColor FontColor;
+  };
+  
+  class cChangeValue : public cMessage_portotype
+  {
+  public:
+    explicit  cChangeValue(char* valueName, float* value, uint16_t formatI, uint16_t formatF, float upkeep, float downkeep);
+    explicit  cChangeValue(char* valueName, uint32_t* value, uint16_t formatI, float upkeep, float downkeep);
+    
+    
+  protected:
+    
+    void start(void);
+    
+    void onShow(void);
+    void userControl(void);
+    
+    uint8_t valueName[20];
+    
+    char val[22];
+    
+    
+    char fromBuff[10];
+    char toBuff[10];
+    float* valueF;
+    uint32_t* valueUI;
+    
+    float value;
+    
+    uint16_t formatI;
+    uint16_t formatF;
+    
+    uint16_t curPos;
+    
+    float upkeep;
+    float downkeep;
+    
+    bool exitPos;
+    
+    void enterKeyAction(void);
+    void rKeyAction(void);
+    void lKeyAction(void);
+    void onKeyAction(void);
+  };
+  
+  class cMode_prototype
+  {
+  public:
+    //метод который будет крутиься в мэйне. обрабатывает нажатия кнопок. определен только здесь. 
+    //для остальных классов определяется userControl
+    void control(void);
+    
+    // этот метод для смены текущего активного мода.
+    void change(cMode_prototype *newMode);
+    
+    //этот метод надо вызывать всякий раз когда нужно перерисовать экран.
+    void show(void);
+    
+    // показывает меню
+    void openMenu(tagMenu* menu,//ссылка на массив структур со строчками меню
+                                 uint16_t len);//его длинна
+    
+    void menuChangeValue(uint32_t* value, uint16_t pose, uint16_t format, uint32_t upTreshhold);
+    
+    void menuChangeValue(float value, uint16_t pose, uint16_t formatInt, uint16_t formatFloat, uint32_t upTreshhold);
+    
+    void showMessage(cMessage_portotype* message);
+  protected:
+    
+    cMessage_portotype* messageClass;
+    
+    //нарисовать меню
+  //автоматичекий запускается в show если меню открыто
+    virtual void showMenu(void);
+    
+    void keyChangeMod(tagKey key, tagKeyMod mod);
+    
+    //часть mode controll определяемая в дочених классах. будет крутиться в мэйне
+    virtual void userControl(void) = 0;
+    
+    // это метод показывает/скрывает элементы меню
+    //!!! ПРОВОДИТЬ ДАННЫЕ ОПЕРАЦИИ ЛУЧШЕ ТОЛЬКО ПРИ ПОМОЩИ НЕГО!!!
+    void menuShowHideLine(uint16_t numOfLine,//номер строки в массиве
+                                         bool show);//показать/скрыть
+    
+    virtual void menuAction(void);
+    
+    // часть show определяемая в дочерних классах. если чегото надо нарисовать, пихам сюда.
+    //------------------------!!!ПО УМОЛЧАНИЮ ТУТ БУДЕТ ПАЛИТРА InterfaceColor !!!--------
+    virtual void onShow(void) = 0;
+    
+    uint8_t modeName[20];
+    
+    //текст кнопок
+    uint8_t leftButtonText[7];
+    uint8_t rightButtonText[7];
+    uint8_t enterButtonText[7];
+    uint8_t onButtonText[7];
+    
+    // действия при нажатии кнопок
+    virtual void enterKeyAction(void) = 0;
+    virtual void rKeyAction(void) = 0;
+    virtual void lKeyAction(void) = 0;
+    virtual void onKeyAction(void) = 0;
+    
+    bool rKeyState;
+    bool lKeyState;
+    bool eKeyState;
+    bool oKeyState;
+    
+    //ссылка на моссив строк меню
+    tagMenu* menu;
+    // его длинна
+    uint16_t menuLen;
+    
+    //количество отображаемых строк
+    uint16_t menuShownlen;
+    
+    //выделеная строка в меню
+    uint16_t currentMenuLine;
+    
+    //номер выделенной строки в массиве
+    uint16_t currentMenuInArr;
+    
+    //первый элемент меню отображаемый на экране
+    uint16_t screenPose;
+    
+    //открыто ли сейчас меню
+    bool menuOpen;
+    
+    // цвет линий которыми нарисован интерфейс
+    struct tagRGBColor InterfaceColor;
+    
+    // цвет шрифта
+    struct tagRGBColor FontColor;
+  };
+  
+#ifdef FILESYSTEM
+  
+  
+  class cOpenFileDialog : public cMessage_portotype
+  {
+  public:
+    explicit cOpenFileDialog(char* ext);
+    
+    HFILE getOpenedFile(void);
+    
+    void start(void);
+  private:
+    tagFileRecord curFiles[12];
+    uint16_t numOfFiles;
+    uint16_t scrPose;
+    uint16_t curCursorPose;
+    
+    int openedFile;
+    
+    char ext[FILE_EXT_SZ];
+    
+    void onShow(void);
+    void userControl(void);
+    
+    void enterKeyAction(void);
+    void rKeyAction(void);
+    void lKeyAction(void);
+    void onKeyAction(void);
+  };
+#endif //FILESYSTEM
+  
+  extern cMode_prototype* currentMode; 
+  
+  extern cMode_prototype* modeKarusel[4]; 
+}
+#endif  //#ifdef __cplusplus
+#endif	//#ifndef _MODE_PROTOTYPE_H

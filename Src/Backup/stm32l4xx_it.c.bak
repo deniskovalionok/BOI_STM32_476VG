@@ -1,0 +1,532 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file    stm32l4xx_it.c
+  * @brief   Interrupt Service Routines.
+  ******************************************************************************
+  *
+  * COPYRIGHT(c) 2018 STMicroelectronics
+  *
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "stm32l4xx_it.h"
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN TD */
+
+/* USER CODE END TD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+ 
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+#include "UART_Usr.h"
+#include "Inits.h"
+#include "ft8xx.h"
+#include "exeptions.h"
+#include "oled.h"
+#include "timer.h"
+#include <stdio.h>
+
+int counterti = 0;
+extern uint16_t oledInited;
+
+uint32_t        _reg_R13, _reg_R14, _reg_CPSR, _reg_SPSR;
+uint32_t 	_reg_R0, _reg_R1, _reg_R2, _reg_R3,_reg_R4, _reg_R5, _reg_R6, _reg_R7,_reg_R8, _reg_R9, _reg_R10, _reg_R11, _reg_R12;
+uint32_t 	_stackVal1, _stackVal2, _stackVal3, _stackVal4;
+
+
+/* USER CODE END 0 */
+
+/* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim15;
+extern DMA_HandleTypeDef hdma_uart4_rx;
+extern DMA_HandleTypeDef hdma_uart4_tx;
+extern DMA_HandleTypeDef hdma_uart5_rx;
+extern DMA_HandleTypeDef hdma_uart5_tx;
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart2_tx;
+extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart5;
+extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
+/* USER CODE BEGIN EV */
+
+/* USER CODE END EV */
+
+/******************************************************************************/
+/*           Cortex-M4 Processor Interruption and Exception Handlers          */ 
+/******************************************************************************/
+/**
+  * @brief This function handles Non maskable interrupt.
+  */
+void NMI_Handler(void)
+{
+  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+  exeption_proc("Unexpected NMI occured.");
+  /* USER CODE END NonMaskableInt_IRQn 0 */
+  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+
+  /* USER CODE END NonMaskableInt_IRQn 1 */
+}
+
+/**
+  * @brief This function handles Hard fault interrupt.
+  */
+void HardFault_Handler(void)
+{
+  /* USER CODE BEGIN HardFault_IRQn 0 */
+  exeption_proc("Hard fault!");
+  /* USER CODE END HardFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
+    /* USER CODE END W1_HardFault_IRQn 0 */
+  }
+}
+
+/**
+  * @brief This function handles Memory management fault.
+  */
+void MemManage_Handler(void)
+{
+  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+  exeption_proc("Memory management fault");
+
+  /* USER CODE END MemoryManagement_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+    /* USER CODE END W1_MemoryManagement_IRQn 0 */
+  }
+}
+
+/**
+  * @brief This function handles Prefetch fault, memory access fault.
+  */
+void BusFault_Handler(void)
+{
+  /* USER CODE BEGIN BusFault_IRQn 0 */
+  exeption_proc("Memory access fault");
+
+  /* USER CODE END BusFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+    /* USER CODE END W1_BusFault_IRQn 0 */
+  }
+}
+
+/**
+  * @brief This function handles Undefined instruction or illegal state.
+  */
+void UsageFault_Handler(void)
+{
+  /* USER CODE BEGIN UsageFault_IRQn 0 */
+  exeption_proc("Undefined instruction or illegal state.");
+
+  /* USER CODE END UsageFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+    /* USER CODE END W1_UsageFault_IRQn 0 */
+  }
+}
+
+/**
+  * @brief This function handles Debug monitor.
+  */
+void DebugMon_Handler(void)
+{
+  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+
+  /* USER CODE END DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+
+  /* USER CODE END DebugMonitor_IRQn 1 */
+}
+
+/**
+  * @brief This function handles Pendable request for system service.
+  */
+void PendSV_Handler(void)
+{
+  /* USER CODE BEGIN PendSV_IRQn 0 */
+
+  /* USER CODE END PendSV_IRQn 0 */
+  /* USER CODE BEGIN PendSV_IRQn 1 */
+
+  /* USER CODE END PendSV_IRQn 1 */
+}
+
+/**
+  * @brief This function handles System tick timer.
+  */
+void SysTick_Handler(void)
+{
+  /* USER CODE BEGIN SysTick_IRQn 0 */
+
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
+  mainTimTI();
+  keysCheck();
+
+  
+  /* USER CODE END SysTick_IRQn 1 */
+}
+
+/******************************************************************************/
+/* STM32L4xx Peripheral Interrupt Handlers                                    */
+/* Add here the Interrupt Handlers for the used peripherals.                  */
+/* For the available peripheral interrupt handler names,                      */
+/* please refer to the startup file (startup_stm32l4xx.s).                    */
+/******************************************************************************/
+
+/**
+  * @brief This function handles DMA1 channel6 global interrupt.
+  */
+void DMA1_Channel6_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel6_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel6_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
+  /* USER CODE BEGIN DMA1_Channel6_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel6_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA1 channel7 global interrupt.
+  */
+void DMA1_Channel7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel7_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart2_tx);
+  /* USER CODE BEGIN DMA1_Channel7_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel7_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 break interrupt and TIM15 global interrupt.
+  */
+void TIM1_BRK_TIM15_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_BRK_TIM15_IRQn 0 */
+
+  /* USER CODE END TIM1_BRK_TIM15_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  HAL_TIM_IRQHandler(&htim15);
+  /* USER CODE BEGIN TIM1_BRK_TIM15_IRQn 1 */
+
+  /* USER CODE END TIM1_BRK_TIM15_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART1 global interrupt.
+  */
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
+
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+
+  /* USER CODE END USART1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+  UART_intConrol(&huart2);
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles UART4 global interrupt.
+  */
+void UART4_IRQHandler(void)
+{
+  /* USER CODE BEGIN UART4_IRQn 0 */
+
+  /* USER CODE END UART4_IRQn 0 */
+  HAL_UART_IRQHandler(&huart4);
+  /* USER CODE BEGIN UART4_IRQn 1 */
+  UART_intConrol(&huart4);
+  /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles UART5 global interrupt.
+  */
+void UART5_IRQHandler(void)
+{
+  /* USER CODE BEGIN UART5_IRQn 0 */
+
+  /* USER CODE END UART5_IRQn 0 */
+  HAL_UART_IRQHandler(&huart5);
+  /* USER CODE BEGIN UART5_IRQn 1 */
+  UART_intConrol(&huart5);
+  /* USER CODE END UART5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 channel1 global interrupt.
+  */
+void DMA2_Channel1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel1_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart5_tx);
+  /* USER CODE BEGIN DMA2_Channel1_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 channel2 global interrupt.
+  */
+void DMA2_Channel2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel2_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart5_rx);
+  /* USER CODE BEGIN DMA2_Channel2_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 channel3 global interrupt.
+  */
+void DMA2_Channel3_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel3_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart4_tx);
+  /* USER CODE BEGIN DMA2_Channel3_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 channel5 global interrupt.
+  */
+void DMA2_Channel5_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel5_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel5_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart4_rx);
+  /* USER CODE BEGIN DMA2_Channel5_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel5_IRQn 1 */
+}
+
+/* USER CODE BEGIN 1 */
+
+enum { r0, r1, r2, r3, r12, lr, pc, psr, s0, s1, s2, s3};
+
+void swi_handler(uint32_t stack[])
+{
+	__disable_irq();
+	//unsigned int reg_r0 = stack[r0];
+        HAL_GPIO_WritePin( CHRG_LED_GPIO_Port,  CHRG_LED_Pin,  GPIO_PIN_SET);
+	unsigned int reg_r1 = stack[r1];
+	unsigned int reg_r2 = stack[r2];
+	unsigned int reg_r3 = stack[r3];
+        /*
+	unsigned int reg_r12 = stack[r12];
+	unsigned int reg_lr = stack[lr];
+	unsigned int reg_pc = stack[pc];
+	unsigned int reg_psr = stack[psr];
+        */
+	unsigned int st_s0 = stack[s0];
+	unsigned int st_s1 = stack[s1];
+	unsigned int st_s2 = stack[s2];
+	unsigned int st_s3 = stack[s3];
+        
+        HAL_GPIO_WritePin( ALRM_L1_GPIO_Port,  ALRM_L1_Pin,  GPIO_PIN_SET);
+        
+        if(!oledInited)
+          while(1);
+        
+        cmd(CMD_DLSTART);
+        cmd(CLEAR_COLOR_RGB(0,0,0));
+        cmd(CLEAR(1,1,1));
+    
+        cmd( COLOR_RGB(255, 0, 0) );
+    
+        cmd_text(10, 0, 28, 0,"PROGRAM EXCEPTION");
+        
+        cmd_text(10, 40, 28, 0,"FUNCTION:");
+        cmd_text(10, 60, 28, 0,(uint8_t*)reg_r1);
+        char buf[20];
+        sprintf(buf, "LINE: %d", reg_r2);
+	cmd_text(10, 100, 28, 0,(uint8_t*)buf);
+	cmd_text(10, 140, 28, 0,"DESCRIPTION:");
+	cmd_text(10, 160, 28, 0,(uint8_t*)reg_r3);
+	cmd_text(10, 200, 28, 0,"STACK:");
+	sprintf(buf, "%x, ", st_s0);
+	cmd_text(10, 220, 28, 0,(uint8_t*)buf);
+	sprintf(buf, "%x, ", st_s1);
+	cmd_text(10, 240, 28, 0,(uint8_t*)buf);
+	sprintf(buf, "%x, ", st_s2);
+	cmd_text(10, 260, 28, 0,(uint8_t*)buf);
+	sprintf(buf, "%x", st_s3);
+	cmd_text(10, 280, 28, 0,(uint8_t*)buf);
+        
+        cmd(DISPLAY());
+        cmd(CMD_SWAP); 
+        
+        uint16_t counter = 0;
+        while(!HAL_GPIO_ReadPin(GPIOC, KEY_R_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_L_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_ENTER_Pin) ||
+             !HAL_GPIO_ReadPin(KEY_ON_P_GPIO_Port, KEY_ON_P_Pin));
+        
+	while(1)
+        {
+          if(!HAL_GPIO_ReadPin(GPIOC, KEY_R_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_L_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_ENTER_Pin) ||
+             !HAL_GPIO_ReadPin(KEY_ON_P_GPIO_Port, KEY_ON_P_Pin))
+            counter++;
+          else
+            counter = 0;
+          if(counter == 60000)
+            HAL_NVIC_SystemReset();
+        }
+}
+
+void exeption_proc(const char* pDesc)
+{
+        __disable_irq();
+        interrupts_get_Registers();
+        HAL_GPIO_WritePin( ALRM_L1_GPIO_Port,  ALRM_L1_Pin,  GPIO_PIN_SET);
+        
+        if(!oledInited)
+          while(1);
+        
+        cmd(CMD_DLSTART);
+        cmd(CLEAR_COLOR_RGB(0,0,0));
+        cmd(CLEAR(1,1,1));
+    
+        cmd( COLOR_RGB(255, 0, 0) );
+    
+        cmd_text(10, 0, 28, 0,"PROGRAM EXCEPTION");
+	cmd_text(10, 40, 28, 0,(uint8_t*)pDesc);
+        
+	cmd_text(10, 80, 28, 0,"REGISTERS:");
+        char buf[40];
+	sprintf(buf, "CPSR - %x, SPSR - %x,", _reg_CPSR, _reg_SPSR);
+	cmd_text(10, 100, 20, 0,(uint8_t*)buf);
+	sprintf(buf, "R0 - %x, R1 - %x, ", _reg_R0, _reg_R1);
+	cmd_text(10, 110, 20, 0,(uint8_t*)buf);
+	sprintf(buf, "R2 - %x, R3 - %x, ", _reg_R2, _reg_R3);
+	cmd_text(10, 120, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "R4 - %x, R5 - %x, ", _reg_R4, _reg_R5);
+	cmd_text(10, 130, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "R6 - %x, R7 - %x, ", _reg_R6, _reg_R7);
+	cmd_text(10, 140, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "R8 - %x, R9 - %x, ", _reg_R8, _reg_R9);
+	cmd_text(10, 150, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "R10 - %x, R11 - %x, ", _reg_R10, _reg_R11);
+	cmd_text(10, 160, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "R12 - %x, R13 - %x, ", _reg_R12, _reg_R13);
+	cmd_text(10, 170, 20, 0,(uint8_t*)buf);
+        
+        cmd_text(10, 190, 28, 0,"STACK:");
+        sprintf(buf, "%x, %x,", _stackVal1, _stackVal2);
+	cmd_text(10, 210, 20, 0,(uint8_t*)buf);
+        sprintf(buf, "%x, %x,", _stackVal3, _stackVal4);
+	cmd_text(10, 220, 20, 0,(uint8_t*)buf);
+        
+        cmd(DISPLAY());
+        cmd(CMD_SWAP); 
+        
+        uint16_t counter = 0;
+        while(!HAL_GPIO_ReadPin(GPIOC, KEY_R_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_L_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_ENTER_Pin) ||
+             !HAL_GPIO_ReadPin(KEY_ON_P_GPIO_Port, KEY_ON_P_Pin));
+        
+	while(1)
+        {
+          if(!HAL_GPIO_ReadPin(GPIOC, KEY_R_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_L_Pin) ||
+             !HAL_GPIO_ReadPin(GPIOC, KEY_ENTER_Pin) ||
+             !HAL_GPIO_ReadPin(KEY_ON_P_GPIO_Port, KEY_ON_P_Pin))
+            counter++;
+          else
+            counter = 0;
+          if(counter == 60000)
+            HAL_NVIC_SystemReset();
+        }
+}
+
+/* USER CODE END 1 */
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

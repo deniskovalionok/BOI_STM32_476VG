@@ -1,0 +1,340 @@
+#ifndef _BD_MODE_H
+#define _BD_MODE_H
+
+#ifdef __cplusplus
+
+#include "Mode_prototype.h"
+#include "ModbusMaster.h"
+
+extern "C"
+{
+#include "filesystem.h"
+}
+
+namespace MODES
+{
+    
+#pragma pack(1)
+  struct tagBDConf{
+    uint8_t  bInfoRegs;
+    
+    uint16_t dataUpdatePeriod;
+    
+    float bdVoltage;
+    
+    MODBUS::tagRegsType regTypeCPS;
+    uint16_t diagCPS;
+    
+    uint16_t initCmdsNum;
+  };
+#pragma pack()
+  
+  enum tagValTypes : uint8_t{
+    INT16 = 0,
+    INT32,
+    FLOAT
+  };
+  
+#pragma pack(1)
+  struct tagBDScreeen{
+    char scrName[20];
+    
+    uint16_t startConReg;
+    uint16_t numOfConReg;
+    
+    uint16_t startDataReg;
+    uint16_t numOfDataReg;
+  };
+#pragma pack()
+  
+#pragma pack(1)
+  struct tagScreenLine{
+    union{
+        char lineString[40];
+        uint16_t lineNums[20];
+    };
+    uint8_t id;
+    uint16_t poseX;
+    uint16_t poseY;
+    uint16_t font;
+    uint16_t options;
+    uint16_t showWithUnit;
+    uint8_t  color[3];
+    
+    uint16_t startReg;
+    tagValTypes type;
+    MODBUS::tagRegsType regType;
+    int16_t tenPow;
+  };
+#pragma pack()
+  
+  enum tagMenuCmds : uint8_t {
+    NONE_CMD = 0,
+    LINE_CMD,
+  };
+
+#pragma pack(1)
+  struct tagBDMenuLine{
+    tagMenuCmds menuCmds;
+    uint8_t name[21];
+    uint8_t id;
+  };
+#pragma pack()
+  
+  struct tagSigmaSt{
+    float sigmas[256];
+    
+    uint32_t cpss[600];
+  
+    uint32_t cpsPreBuff[40];
+    
+    uint16_t cpsPreBuffPointer;
+    
+    bool cpsPreBuffrel[40];
+    
+    bool calcStart;
+  
+    uint32_t summCPS;
+    
+    float sigmaMax;
+    
+    float sigmaMin;
+    
+    uint16_t sigmaStPointer;
+    
+    uint8_t sigmaStlen;
+    
+    uint8_t cpsPointer;
+    
+    bool sigmaStart;
+    
+    uint8_t stLenCur;
+  
+    float sigmaPorog[40];
+  };
+   enum tagSpecModes : uint8_t{
+        MARKER = 0,
+        ACQUIR,
+        ZOOM,
+        YSCALE,
+        WINDOW,
+        VIEW,
+    };
+  
+  class cBD_config;
+  
+  class cBD_Spec_mode : public cMode_prototype
+  {
+  public:
+    explicit cBD_Spec_mode(MODBUS::cBD* BD, TIMER::cMS_timer_prototype* tim);
+  private:
+    
+    friend cBD_config;
+  
+    MODBUS::cBD* BD;
+    void userControl(void);
+    
+    void initRead(bool isComp, uint16_t specUpdatePeriod);
+    bool startSpecRead(void);
+    void specRead(void);
+    
+    void onShow(void);
+    
+    void stopSpecRead(void);
+    
+    bool waitAnsw;
+        
+    bool isComp;
+    
+    uint8_t old_ID;
+    
+    uint16_t specNum;
+    
+    uint16_t numOfspec;
+    
+    uint16_t markerPose;
+    
+    uint16_t windowPose;
+    
+    uint16_t scrlen;
+    uint16_t scrPose;
+    
+    bool countMode;
+    union{
+        tagSpecModes mod;
+        uint8_t modNum;
+    };
+    
+    long specBuff[2048];
+    long sigmaBuff[2048];
+    long energyBuff[2048];
+    
+    uint16_t aliveTime;
+    uint32_t hiEnergyCPS;
+    
+    uint32_t cntSumm;
+    
+     uint32_t curMaxCps;
+    
+    uint8_t tempBuff[256];
+    
+    bool inLine;
+    
+    bool showLog;
+    
+    uint16_t scale;
+    
+    uint16_t numOfCanal;
+    
+    uint16_t poseInSpec;
+    
+    uint16_t poseInBuff;
+    
+    bool inited;
+    
+    uint16_t markerSpeed;
+    
+    bool keyHold;
+    
+    bool reInint;
+
+    
+    uint16_t specUpdatePeriod;
+    
+    bool waitForRx;
+    bool started;
+    
+    TIMER::cMS_timer_prototype* tim;
+    
+    void enterKeyAction(void);
+    void rKeyAction(void);
+    void lKeyAction(void);
+    void onKeyAction(void);
+  };
+    
+  class cBD_mode;
+  
+  class cBD_config
+  {
+  public:
+    explicit cBD_config(MODBUS::cBD* BD,TIMER::cMS_timer_prototype* tim);
+    
+    explicit cBD_config(MODBUS::cBD* BD,TIMER::cMS_timer_prototype* tim, cBD_Spec_mode* spec);
+  
+    void control(void);
+    
+  private:
+    
+    bool findConf(void);
+    void showScreen(void);
+    
+    void readMenu(void);
+    
+    friend cBD_mode;
+    
+    bool getMenuLine(uint16_t num, uint8_t* name);
+    
+    void show(void);
+  
+    uint16_t getMenuLen(void);
+  
+    void showSpec(void);
+  
+    void menuLineAction(uint16_t num);
+    
+    bool getMenuState(void);
+    
+    float quantile_poisson_in_sigm(float _probability, float _mid);
+    
+    void createFileTest(HFILE file);
+    
+    void openScreen(uint16_t screenNum);
+    void readLine(uint16_t lineNum);
+    void readFromConf(uint32_t startPose, void* value, uint32_t len);
+    void calcSigma(void);
+    bool sendCmd(uint8_t id);
+    
+    char nameBuff[FILE_NAME_SZ];
+    char curBDid;
+    uint32_t fileLen;
+    uint16_t curLineNum;
+    uint16_t curClasterNum;
+    uint32_t curClasterPose;
+    tagBDScreeen curScreen;
+    tagBDConf BDConf;
+    tagScreenLine curLine;
+    uint32_t fileStartClaster;
+    
+    uint16_t curScreenNum;
+    uint16_t curScreenPose;
+    uint16_t screensStart;
+    uint16_t numOfScreens;
+    
+    tagBDMenuLine menuLine;
+    
+    uint16_t numOfMenuLines;
+    uint16_t numOfMenuNames;
+    uint16_t startOfMenuLines;
+    uint16_t curMenuLine;
+    int curMenuPose; 
+    
+    uint16_t startOfCmds;
+    uint16_t curCmdPose;
+    uint8_t curCmdId;
+    uint8_t curCmdLen;
+    uint8_t cmdBuff[256];
+    uint16_t numOfCmd;
+    
+    void showMenu(void);
+    
+    uint16_t scrLen;
+    
+    bool sendInProcess;
+    
+    bool waitAnsw;
+    
+    TIMER::cMS_timer_prototype* tim;
+    
+    tagSigmaSt sigmaSt;
+    
+    uint16_t tLit;
+    uint16_t tBig;
+    uint16_t tMaxInt;
+    
+    cBD_Spec_mode* spec;
+    
+    MODBUS::cBD* BD;
+  };
+  
+  
+  class cBD_mode : public cMode_prototype
+  {
+  public:
+    explicit cBD_mode(MODBUS::cBD* BD, cBD_config* conf);
+  private:
+    MODBUS::cBD* BD;
+    void userControl(void);
+    
+    void showMenu(void);
+    
+    void onShow(void);
+    
+    uint8_t old_ID;
+    
+    bool countMode;
+    
+    cBD_config* conf;
+    
+    uint16_t specUpdatePeriod;
+    
+    void menuAction(void);
+    
+    void enterKeyAction(void);
+    void rKeyAction(void);
+    void lKeyAction(void);
+    void onKeyAction(void);
+  };
+};
+
+#endif  //#ifdef __cplusplus
+#endif	//#ifndef _BD_MODE_H
